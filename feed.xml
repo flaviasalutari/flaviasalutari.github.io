@@ -1,0 +1,690 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Flavia Salutari's Website</title>
+    <description>A page about me</description>
+    <link>https://flaviasalutari.github.io//</link>
+    <atom:link href="https://flaviasalutari.github.io//feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Sat, 06 Mar 2021 16:17:00 +0100</pubDate>
+    <lastBuildDate>Sat, 06 Mar 2021 16:17:00 +0100</lastBuildDate>
+    <generator>Jekyll v3.7.4</generator>
+    
+      <item>
+        <title>How to build a Twitter bot in 5 minutes (and tweet the entire Boris script)</title>
+        <description>&lt;p&gt;The weather is bad, covid restrictions are still there and you are starting to get tired of endlessly switching from baking to binge-watching your favourite TV show on Netflix, aren’t you?&lt;/p&gt;
+
+&lt;p&gt;Last weekend I was exactly in this mood. So, inspired from the &lt;a href=&quot;https://twitter.com/scriptfleabag&quot;&gt;Fleabag script bot&lt;/a&gt; I decided to grasp the opportunity to learn how to build Twitter bots. I did one for &lt;em&gt;La Grande Bellezza&lt;/em&gt; (&lt;a href=&quot;https://twitter.com/greatbeautybot&quot;&gt;&lt;em&gt;The Great Beauty&lt;/em&gt;&lt;/a&gt;) and one for &lt;a href=&quot;https://twitter.com/boris_scriptbot&quot;&gt;&lt;em&gt;Boris&lt;/em&gt;&lt;/a&gt;, two inexhaustible sources of Italian memes and life lessons (two categories apparently uncorrelated but actually hyper-interdependent).&lt;/p&gt;
+
+&lt;p&gt;If you’re also eager to learn how to build a bot, you’re in the right place: in this post I will show you how to easily set up a Twitter bot in Python which systematically tweets every hour a quote from your favourite movie.&lt;/p&gt;
+
+&lt;h2 id=&quot;1-go-grab-the-script&quot;&gt;1. Go grab the script&lt;/h2&gt;
+
+&lt;p&gt;First things first, we need the file from which our bot will randomly choose a sentence to tweet. One approach is to retrieve and use directly the script of the movie, from sites storing free available scripts, as &lt;a href=&quot;https://imsdb.com/&quot;&gt;The Internet Movie Database&lt;/a&gt;. But since only a small portion of the movies are available on imsdb, here instead we rely on movie subtitles, freely downloadable from &lt;a href=&quot;https://www.opensubtitles.org/&quot;&gt;OpenSubtitle&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Just select the language you prefer, type the movie/TV show title in the search bar and download the subtitles in the &lt;em&gt;srt&lt;/em&gt; format. In this guide I will use the English subs of the multi-award winning &lt;em&gt;Parasite&lt;/em&gt; movie.&lt;/p&gt;
+
+&lt;p&gt;To extract the clean text from the &lt;em&gt;.srt&lt;/em&gt; file we could either do it with manual parsing, filtering out the timings and the HTML tags, or with the help of the &lt;code&gt;pysrt&lt;/code&gt; package. This is the code I used to manually parse the subtitles into a &lt;code&gt;.txt&lt;/code&gt; file:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;re&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;parse_file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fname&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;file&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fname&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;r&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;lines&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;readlines&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;close&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;script_parsed&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&amp;#39;&amp;#39;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;line&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lines&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;re&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;search&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&amp;#39;^[0-9]+$&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;line&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;is&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;None&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;and&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;re&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;search&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&amp;#39;^[0-9]{2}:[0-9]{2}:[0-9]{2}&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;line&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;is&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;None&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;and&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;re&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;search&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&amp;#39;^$&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;line&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;is&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;None&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;line&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;re&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sub&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&amp;#39;&amp;lt;[^&amp;lt;]+?&amp;gt;&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&amp;#39;&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;line&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; 
+            &lt;span class=&quot;n&quot;&gt;line&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;re&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sub&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&amp;#39;{.*}&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&amp;#39;&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;line&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;script_parsed&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&amp;#39; &amp;#39;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;line&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rstrip&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&amp;#39;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;script_parsed&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;script_parsed&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lstrip&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;script_parsed&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;script&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;parse_file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&amp;quot;./2020_Parasite.srt&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;output_file&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&amp;quot;2020_Parasite_script.txt&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;w&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;output_file&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;write&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;script&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;output_file&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;close&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Now that we have in &lt;code&gt;2020_Parasite_script.txt&lt;/code&gt; the clean movie script we can build the actual bot.&lt;/p&gt;
+
+&lt;h2 id=&quot;2-set-up-your-twitter-bot&quot;&gt;2. Set up your Twitter bot&lt;/h2&gt;
+
+&lt;p&gt;Create the &lt;a href=&quot;https://twitter.com/signup&quot;&gt;Twitter account&lt;/a&gt; to get started. Then, head over to &lt;a href=&quot;developer.twitter.com&quot;&gt;developer.twitter.com&lt;/a&gt; to apply for a developer account. Select &lt;em&gt;Hobbyist&lt;/em&gt;, then flag &lt;em&gt;Making a bot&lt;/em&gt; and compile all the required fields. Once you have completed this step, and you’ve verified your developer account, you can create an app from the &lt;a href=&quot;https://developer.twitter.com/en/portal/dashboard&quot;&gt;dashboard&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Now, you can generate from &lt;em&gt;Keys and Tokens&lt;/em&gt; &lt;strong&gt;both&lt;/strong&gt; the Consumer Keys and the Authentication Tokens, that you will need to link your bot script with the Twitter app: annotate and carefully protect them. Also, be sure to have enabled both the &lt;em&gt;Read&lt;/em&gt; and &lt;em&gt;Write&lt;/em&gt; permissions from &lt;em&gt;App Settings → App permissions&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;At this stage, everything is ready to build the bot. First of all, let’s import all the Python modules and load the script file of the movie. To make things easier, we leverage the &lt;code&gt;nltk&lt;/code&gt;package for Natural Language Processing to smoothly split the corpus into sentences. We also rely on the &lt;code&gt;tweepy&lt;/code&gt;package, a simple wrapper of the Twitter API. You can easily install them via &lt;code&gt;pip&lt;/code&gt;.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;tweepy&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;random&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;nltk&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;nltk&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;download&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&amp;#39;punkt&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;nltk&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tokenize&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;corpus&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&amp;#39;2020_Parasite_script.txt&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&amp;#39;r&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;read&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;sentences&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tokenize&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sent_tokenize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;corpus&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;We next pick a random quote (of a compatible character limit size) from this set set of sentences:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n_sentences&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;len&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sentences&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;length&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;260&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;length&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;250&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;or&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;length&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;quote&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sentences&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;random&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;randint&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n_sentences&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;strip&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;quote&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot; &amp;quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;join&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;quote&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;split&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;())&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;length&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;len&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;quote&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;quote&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Finally, we use the previously generated keys to authenticate and tweet the selected quote.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;CONSUMER_KEY&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;MYCONSUMERKEY&amp;quot;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# insert here your keys&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;CONSUMER_SECRET&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;MYCONSUMERKEY&amp;quot;&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;ACCESS_TOKEN_KEY&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;MYTOKENKEY&amp;quot;&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;ACCESS_TOKEN_SECRET&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;MYTOKENSECRET&amp;quot;&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;auth&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tweepy&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;OAuthHandler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;CONSUMER_KEY&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;CONSUMER_SECRET&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;auth&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;set_access_token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ACCESS_TOKEN_KEY&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ACCESS_TOKEN_SECRET&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;api&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tweepy&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;API&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;auth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;api&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;update_status&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;quote&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://i.imgur.com/QdZZKDm.gif&quot; alt=&quot;up&quot; width=&quot;150px&quot; style=&quot;float: left;margin-right: 7px;margin-top: -5px;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Now we are really (almost) done.&lt;/p&gt;
+
+&lt;p&gt;Substitute your consumer and access token keys (and eventually hide them in a &lt;code&gt;.env&lt;/code&gt; file) and put everything in a &lt;code&gt;tweet_parasite.py&lt;/code&gt; script. 
+We inserted a &lt;code&gt;print&lt;/code&gt; so we can see an example of what we get when we run it from the terminal:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;python&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tweet_parasite&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;py&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;You&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;can&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;just&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;drop&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;me&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;off&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;at&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Hyehwa&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;station&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h2 id=&quot;3-go-pro-and-deploy-the-bot-on-heroku&quot;&gt;3. Go PRO and deploy the bot on Heroku&lt;/h2&gt;
+
+&lt;p&gt;Perfect! The bot is working, we checked that it tweets correctly the selected quote but we want it to do it automatically and continuously. Great. That’s where &lt;a href=&quot;https://www.heroku.com/&quot;&gt;Heroku&lt;/a&gt; comes into play. Sign up for a free account and &lt;a href=&quot;https://dashboard.heroku.com/apps/&quot;&gt;register a new app&lt;/a&gt; to run your bot. Follow the instructions to log in with your Heroku credentials locally, then in the folder containing the Python bot &lt;code&gt;tweet_parasite.py&lt;/code&gt; and the movie script &lt;code&gt;2020_Parasite_script.txt&lt;/code&gt; add a &lt;code&gt;requirements.txt&lt;/code&gt; file with the nltk and tweepy versions you installed (you can check them via &lt;code&gt;pip list&lt;/code&gt;). In my case this is:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;nltk&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;==&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;3.5&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;tweepy&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;==&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;3.10&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Now, you can commit your project to heroku.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;git&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;add&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;git&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;commit&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;m&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;initialize&amp;quot;&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;heroku&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;create&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;git&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;push&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;heroku&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;master&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;You can finally add the free &lt;em&gt;Heroku Scheduler&lt;/em&gt; add-on to run your app at specific intervals. From the &lt;a href=&quot;https://dashboard.heroku.com/apps/scheduler&quot;&gt;scheduler dashboard&lt;/a&gt; you can add jobs that will run the bot every 10 minutes, every hour, or at specific hours every day.&lt;/p&gt;
+
+&lt;p&gt;I hope this was helpful! :)&lt;/p&gt;
+
+&lt;!-- 
+~~elucubrazioni~~
+
+## Let's getting started
+
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## Headings H1 to H6
+
+# H1 Heading
+
+## H2 Heading
+
+### H3 Heading
+
+#### H4 Heading
+
+##### H5 Heading
+
+###### H6 Heading
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## Footnote
+
+Let's say you have text that you want to refer with a footnote, you can do that too! This is an example for the footnote number one [^1]. You can even add more footnotes, with link! [^2]
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## Blockquote
+
+&gt; Start by doing what's necessary; then do what's possible; and suddenly you are doing the impossible. --Francis of Assisi
+
+**NOTE:** This theme does NOT support nested blockquotes.
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## List Items
+
+1. First order list item
+2. Second item
+
+* Unordered list can use asterisks
+- Or minuses
++ Or pluses
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## Code Blocks
+
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;s&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;JavaScript syntax highlighting&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;alert&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;sys&lt;/span&gt;  
+&lt;span class=&quot;n&quot;&gt;s&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;Python syntax highlighting&amp;quot;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;  
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;run_some_function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;():&lt;/span&gt;
+    &lt;span class=&quot;s2&quot;&gt;&amp;quot;Docs...&amp;quot;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-css&quot; data-lang=&quot;css&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;c&quot;&gt;/* css synthax highlighting */&lt;/span&gt; 
+&lt;span class=&quot;p&quot;&gt;#&lt;/span&gt;&lt;span class=&quot;nn&quot;&gt;container&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;left&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;margin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;-240&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;px&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+
+```
+No language indicated, so no syntax highlighting.
+But let's throw in a &lt;b&gt;tag&lt;/b&gt;.
+```
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## Table
+
+### Table 1: With Alignment
+
+| Tables        | Are           | Cool  |
+| ------------- |:-------------:| -----:|
+| col 3 is      | right-aligned | $1600 |
+| col 2 is      | centered      |   $12 |
+| zebra stripes | are neat      |    $1 |
+
+### Table 2: With Typography Elements
+
+Markdown | Less | Pretty
+--- | --- | ---
+*Still* | `renders` | **nicely**
+1 | 2 | 3
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## Horizontal Line
+
+The HTML `&lt;hr&gt;` element is for creating a &quot;thematic break&quot; between paragraph-level elements. In markdown, you can create a `&lt;hr&gt;` with any of the following:
+
+* `___`: three consecutive underscores
+* `---`: three consecutive dashes
+* `***`: three consecutive asterisks
+
+renders to:
+
+___
+
+---
+
+***
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## Media
+
+### YouTube Embedded Iframe
+
+&lt;iframe width=&quot;420&quot; height=&quot;315&quot; src=&quot;https://www.youtube.com/embed/nN6QuNqmAwk&quot; frameborder=&quot;0&quot; allowfullscreen&gt;&lt;/iframe&gt;
+
+### Image
+
+![Nature](https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcSn8cwf82ee9tfml4Wx-tsM5AUavJ_DRHIiXXE4RejRp0RF2L7f6g)
+
+[^1]: Footnote number one yeah baby!
+
+[^2]: A footnote you can link to - [click here!](#) --&gt;
+</description>
+        <pubDate>Tue, 02 Feb 2021 14:46:52 +0100</pubDate>
+        <link>https://flaviasalutari.github.io//blog/2021/howtomakeatwitterbotin5min/</link>
+        <guid isPermaLink="true">https://flaviasalutari.github.io//blog/2021/howtomakeatwitterbotin5min/</guid>
+        
+        <category>boris</category>
+        
+        <category>twitter</category>
+        
+        <category>bot</category>
+        
+        <category>guide</category>
+        
+        <category>python</category>
+        
+        
+        <category>tutorial</category>
+        
+      </item>
+    
+      <item>
+        <title>Are Wikipedia users satisfied?</title>
+        <description>&lt;p&gt;Long story short, yes, they are.&lt;/p&gt;
+
+&lt;p&gt;But how we discovered it? Does it hold also during fundraising campaigns periods? And also when the system is affected by network-related events allegedly impacting the site performance?&lt;/p&gt;
+
+&lt;p&gt;The Web is one of the most successful Internet application. It is no surprise, then, that QoE directly affects end-users’ willingness to visit a webpage as well as content providers’ business revenues.&lt;br /&gt;
+Yet, the quality of Web users’ experience is still largely impenetrable.&lt;/p&gt;
+
+&lt;p&gt;Whereas Web performances are typically gathered with controlled experiments, here we perform a large-scale study of Wikipedia Quality-Of-Experience (QoE) explicitly asking (a small fraction of its) users for feedback on their browsing experience. The analysis of the collected users’ feedback reveals both expected and surprising findings.&lt;/p&gt;
+
+&lt;h3 id=&quot;1-quality-of-experience-matters&quot;&gt;1. Quality-Of-Experience matters&lt;/h3&gt;
+
+&lt;p&gt;Since its inception, the World Wide Web has sometimes been dubbed as World Wide “Wait” and for this reason a lot of effort has been devoted to reduce its delays. However, it is still unclear if and by how much a latency reduction translates into a better perceived experience from the user point of view.&lt;/p&gt;
+
+&lt;center&gt;&lt;img src=&quot;/images/webqoe/snail_webpage.jpg&quot; width=&quot;300&quot; /&gt;&lt;/center&gt;
+
+&lt;p&gt;This, coupled with the obvious aspect of Web QoE heavily impacting revenues for web-based companies, motivated a proliferation of new metrics proposals and validation studies attempting at better capturing human perception on browsing experience. Hence, it seems clear that enhancing Web QoE is of key concerns for many different stakeholders. Indeed, offering a good QoE, ensuring that users are satisfied of the service provided, is a common goal for browser makers, Internet Service Providers (ISP) and equipment vendors.&lt;/p&gt;
+
+&lt;p&gt;The difficulty in capturing users QoE on the Web is the result of the fact that it is affected by several factors, some of them often measurable, like the context (e.g., the location, the age, etc.) or the system (e.g.,  the network type, the application, the device, etc.), some others more frequently unknown and not trackable, as the user expectations.&lt;/p&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;center&gt;&lt;img src=&quot;/images/webqoe/mazzarri.jpg&quot; width=&quot;300&quot; /&gt;&lt;/center&gt;
+&lt;center&gt;Impatient user. &lt;/center&gt;
+&lt;p&gt;&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;2-measure-user-acceptance-of-wikipedia&quot;&gt;2. Measure User Acceptance of Wikipedia&lt;/h3&gt;
+
+&lt;p&gt;Subjective metrics are gathered by directly collecting responses from users regarding different questions related to Web QoE.  Several approaches have been proposed in the literature. Among them, the Mean Opinion Score (MOS) is rather common with VoIP services: Skype, Hangouts often ask for a rating at the end of the call. This approach consists in averaging answers from a set of many users which have been asked to rate on a 5-scale range their QoE.&lt;/p&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;center&gt;&lt;img src=&quot;/images/webqoe/qoe_voip.png&quot; width=&quot;500&quot; /&gt;&lt;/center&gt;
+&lt;center&gt;5-scale range to measure QoE on popular VoIP services. &lt;/center&gt;
+&lt;p&gt;&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;p&gt;Instead of opting for a 5-grade Absolute Category Ranking (ACR) score, we run a survey which explicitly asks users for their acceptance,  i.e., users can respond with  a &lt;em&gt;positive&lt;/em&gt;, &lt;em&gt;neutral&lt;/em&gt; or &lt;em&gt;negative&lt;/em&gt; experience.
+Therefore, we launch a large-scale measurement campaign over Wikipedia, that gathers over 62k survey responses in nearly 5 months.&lt;/p&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;center&gt;&lt;img src=&quot;/images/webqoe/survey.gif&quot; width=&quot;500&quot; /&gt;&lt;/center&gt;
+&lt;center&gt;Survey Appearance on Wikipedia pages. &lt;/center&gt;
+&lt;p&gt;&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;p&gt;We complement the collection of user labels with &lt;em&gt;objective&lt;/em&gt; metrics concerning the user browsing experience (from the simple page load time to the more sophisticated metrics), and harvest several data sources to further enrich the dataset with several other informations (ranging from technical specification of the user device to techno-economic aspects tied to the user country) so that each user survey answer is associated with over 100 features.&lt;/p&gt;
+
+&lt;p&gt;The analysis of the user feedback reveals bsence of seasonality in the answer breakdown. Indeed, the daily fraction of positive, neutral and negative answers remains remarkably steady over the observation period, with a stationary fraction of about 85% satisfied users. By looking at different Wikipedia-related events happening during the same period, e.g., injection of banners for fundraising, data center switchover or browser regression, this result could be somewhat surprising since, one would expect these events to directly affect the objective measurable delay.&lt;/p&gt;
+
+&lt;p&gt;Congrats Wikipedia! The service provided is so excellent that users are (almost always) satisfied!&lt;/p&gt;
+
+&lt;!-- &lt;br/&gt;&lt;br/&gt; --&gt;
+&lt;center&gt;&lt;img src=&quot;https://tenor.com/view/claps-applause-harry-potter-gif-13987168.gif&quot; width=&quot;400&quot; /&gt;&lt;/center&gt;
+&lt;p&gt;&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;3-user-feedback-prediction-great-expectations-big-disappointment&quot;&gt;3. User Feedback Prediction: Great Expectations, Big Disappointment&lt;/h3&gt;
+
+&lt;p&gt;At this point, one could ask a very simple but challenging question: “Can we predict the &lt;em&gt;subjective&lt;/em&gt; user feedback based on the &lt;em&gt;objective&lt;/em&gt; features collected?” This would be very helpful in the context of QoE monitoring and degradation dection.&lt;/p&gt;
+
+&lt;p&gt;So, we leverage user responses to build supervised data-driven models to predict user satisfaction.&lt;/p&gt;
+
+&lt;p&gt;Unfortunately, prediction outcome is deceiving despite the relatively large number of features collected, among which state-of-the art quality of experience metrics. We also consider how the classification results change when we slice the dataset by keeping only subsets of them and observe a still very limited improvement.&lt;/p&gt;
+
+&lt;p&gt;Moreover, there exist other QoE influence factors that we did not include in this study, like the sentiment linked to the topic and the content of the page or more information about the context in which the measurement is carried out, as the earlier user browsing experience. These undoubtedly have an important impact, that is however hard to capture in the experiment we carry on!&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://media.giphy.com/media/J4n8zUlfvthV8HDm1E/giphy.gif&quot; alt=&quot;down&quot; height=&quot;36px&quot; width=&quot;36px&quot; /&gt; Want to know more? Read our papers!&lt;/p&gt;
+
+&lt;h4 id=&quot;publications&quot;&gt;Publications&lt;/h4&gt;
+
+&lt;p&gt;Salutari, Flavia, Da Hora, Diego, Dubuc, Gilles, &amp;amp; Rossi, Dario, &lt;em&gt;A large-scale study of Wikipedia users’ quality of experience&lt;/em&gt;, The Web Conference (WWW’19) May 2019.&lt;/p&gt;
+
+&lt;p&gt;Salutari, Flavia, Da Hora, Diego, Dubuc, Gilles, &amp;amp; Rossi, Dario, &lt;em&gt;Analyzing Wikipedia Users’ Perceived Quality Of Experience: A Large-Scale Study&lt;/em&gt;, IEEE Transactions on Network and Service Management, 2020.&lt;/p&gt;
+
+&lt;!-- 
+~~elucubrazioni~~
+
+## Let's getting started
+
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## Headings H1 to H6
+
+# H1 Heading
+
+## H2 Heading
+
+### H3 Heading
+
+#### H4 Heading
+
+##### H5 Heading
+
+###### H6 Heading
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## Footnote
+
+Let's say you have text that you want to refer with a footnote, you can do that too! This is an example for the footnote number one [^1]. You can even add more footnotes, with link! [^2]
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## Blockquote
+
+&gt; Start by doing what's necessary; then do what's possible; and suddenly you are doing the impossible. --Francis of Assisi
+
+**NOTE:** This theme does NOT support nested blockquotes.
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## List Items
+
+1. First order list item
+2. Second item
+
+* Unordered list can use asterisks
+- Or minuses
++ Or pluses
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## Code Blocks
+
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;s&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;JavaScript syntax highlighting&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;alert&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;sys&lt;/span&gt;  
+&lt;span class=&quot;n&quot;&gt;s&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;Python syntax highlighting&amp;quot;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;  
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;run_some_function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;():&lt;/span&gt;
+    &lt;span class=&quot;s2&quot;&gt;&amp;quot;Docs...&amp;quot;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-css&quot; data-lang=&quot;css&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;c&quot;&gt;/* css synthax highlighting */&lt;/span&gt; 
+&lt;span class=&quot;p&quot;&gt;#&lt;/span&gt;&lt;span class=&quot;nn&quot;&gt;container&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;left&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;margin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;-240&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;px&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+
+```
+No language indicated, so no syntax highlighting.
+But let's throw in a &lt;b&gt;tag&lt;/b&gt;.
+```
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## Table
+
+### Table 1: With Alignment
+
+| Tables        | Are           | Cool  |
+| ------------- |:-------------:| -----:|
+| col 3 is      | right-aligned | $1600 |
+| col 2 is      | centered      |   $12 |
+| zebra stripes | are neat      |    $1 |
+
+### Table 2: With Typography Elements
+
+Markdown | Less | Pretty
+--- | --- | ---
+*Still* | `renders` | **nicely**
+1 | 2 | 3
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## Horizontal Line
+
+The HTML `&lt;hr&gt;` element is for creating a &quot;thematic break&quot; between paragraph-level elements. In markdown, you can create a `&lt;hr&gt;` with any of the following:
+
+* `___`: three consecutive underscores
+* `---`: three consecutive dashes
+* `***`: three consecutive asterisks
+
+renders to:
+
+___
+
+---
+
+***
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## Media
+
+### YouTube Embedded Iframe
+
+&lt;iframe width=&quot;420&quot; height=&quot;315&quot; src=&quot;https://www.youtube.com/embed/nN6QuNqmAwk&quot; frameborder=&quot;0&quot; allowfullscreen&gt;&lt;/iframe&gt;
+
+### Image
+
+![Nature](https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcSn8cwf82ee9tfml4Wx-tsM5AUavJ_DRHIiXXE4RejRp0RF2L7f6g)
+
+[^1]: Footnote number one yeah baby!
+
+[^2]: A footnote you can link to - [click here!](#) --&gt;
+</description>
+        <pubDate>Wed, 15 Apr 2020 15:46:52 +0200</pubDate>
+        <link>https://flaviasalutari.github.io//blog/2020/wikiqoe/</link>
+        <guid isPermaLink="true">https://flaviasalutari.github.io//blog/2020/wikiqoe/</guid>
+        
+        <category>Quality of Experience</category>
+        
+        <category>User Satisfaction</category>
+        
+        <category>Internet</category>
+        
+        <category>Supervised Classification</category>
+        
+        
+        <category>publications</category>
+        
+      </item>
+    
+      <item>
+        <title>Host Classification via IP-ID</title>
+        <description>&lt;p&gt;At the dawn of the Internet a 16 bits field was introduced in the IPv4 packet to assist network-layer fragmentation and reassembly processes: the IP identifier (IP-ID).&lt;/p&gt;
+
+&lt;p&gt;Over the years, the IP-ID was mostly implemented as a simple packet counter: however, this behavior
+has been discouraged for security reasons and other policies, as the use of random values, have been suggested. Nowadays, things seem to be changed: with an Internet-wide census we reveal which are the most prevalent IP-ID implementations.&lt;/p&gt;
+
+&lt;h3 id=&quot;1-a-brief-history-of-ip-id-implementations-and-applications&quot;&gt;1. A brief history of IP-ID, implementations and applications&lt;/h3&gt;
+
+&lt;p&gt;In the very first document, the &lt;a href=&quot;https://tools.ietf.org/html/rfc791&quot;&gt;RFC 791&lt;/a&gt;, valid IP-ID choices were not fully specified: it was only stated that each IP packet must have a unique IP-ID for the trio of source, destination and protocol within the maximum datagram lifetime. This made possible its exploitation and &lt;em&gt;abuse&lt;/em&gt; for a range of tasks, from counting hosts behind NAT, to detect router aliases and, lately, to assist detection of censorship in the Internet at large.&lt;/p&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;center&gt;&lt;img src=&quot;https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Ipv4_header.svg/1000px-Ipv4_header.svg.png&quot; width=&quot;500&quot; /&gt;&lt;/center&gt;
+&lt;center&gt;IP Packet Header. [Wikipedia]&lt;/center&gt;
+&lt;p&gt;&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;p&gt;Yet, over the years, with technology evolution, the IP-ID has been the object of numerous changes (for instance, to enforce more secure policies), and about a decade ago the different ways in which it could be set by the operating system were listed and detailed in &lt;a href=&quot;https://tools.ietf.org/html/rfc4413&quot;&gt;RFC 4413&lt;/a&gt; and &lt;a href=&quot;https://tools.ietf.org/html/rfc5225&quot;&gt;RFC 5225&lt;/a&gt;. As a result, a wider range of behaviors can be expected nowadays. Indeed, the IP-ID field can be set in different manners: as a &lt;em&gt;global&lt;/em&gt; counter (incremented by one at every new packet), or as a &lt;em&gt;local&lt;/em&gt; counter (in which separate counters are kept for different destinations), or as the output of a &lt;em&gt;pseudo-random&lt;/em&gt; number generator or finally as a (typically null-valued) &lt;em&gt;constant&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://cs.gmu.edu/~eoster/2019-795/2019-795-papers/06682711.pdf&quot;&gt;The sole quantitative assessment&lt;/a&gt; of IP-ID behavior over multiple classes dates back to 2013 and is limited to 271 Top Level Domains TLDs. This study finds the IP-ID implementations to be so distributed: 57% global, 14% local, 9% constant, 1% random/other. The remaining works concentrate instead on assessing the popularity of just the global implementation being it the only focus of their studies, given its invaluable help to infer a wealth of information concerning the network.&lt;/p&gt;
+
+&lt;h3 id=&quot;2-measure-and-classify-the-ip-ids&quot;&gt;2. Measure and classify the IP-IDs&lt;/h3&gt;
+
+&lt;p&gt;These policies can be inferred by leveraging two vantage points sending packets that arrived interleaved at the target host: the resulting sequences are illustrated in the following pictures (where the two vantage points are represented as a white box and a purple circle).&lt;/p&gt;
+
+&lt;p&gt;In &lt;a href=&quot;https://flaviasalutari.github.io/publications/pam2018.pdf&quot;&gt;our study&lt;/a&gt;, we first propose a framework to robustly classify the different IP-ID behaviours with only a handful of IP packets. We rely on active probing from a single host using IP spoofing to precisely control packet interleaving at the generation. Despite being only minimally intrusive, our technique is significantly accurate (99% true positive classification), robust against packet losses (up to 20%) and lightweight (few packets suffices to discriminate all IP-ID behaviors). 
+&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;center&gt;&lt;img src=&quot;/images/ipid/ipid_classes.png&quot; width=&quot;500&quot; /&gt;&lt;/center&gt;
+&lt;center&gt;Synoptic of IP-ID host behaviors.&lt;/center&gt;
+&lt;p&gt;&lt;br /&gt;&lt;br /&gt;
+This framework is based on the definition of highly discriminative features with known expected values, that we train over a dataset with manually constructed ground truth, that we make available to the community. Notice that by employing a supervised technique, we are also able to cope with odd behaviors such as those due to load balancing middleboxes, or host implementations using the wrong endianness. The &lt;a href=&quot;https://perso.telecom-paristech.fr/drossi/data/ipid/IPID-G.tgz&quot;&gt;ground truth dataset&lt;/a&gt; we release can of course be useful to validate any other technique you may wish to define, so don’t hesitate to grab a copy!&lt;/p&gt;
+
+&lt;h3 id=&quot;3-an-internet-wide-census&quot;&gt;3. An Internet-wide Census&lt;/h3&gt;
+
+&lt;p&gt;Given that our classifier is lightweight and robust to losses, we finally performed a census of the IPv4 address space. We do so by actively probing one alive target per each routable /24 block.
+This outcome provides a picture of Internet-wide adoption of the different IP-ID implementations.&lt;/p&gt;
+
+&lt;center&gt;&lt;img src=&quot;/images/ipid/IP-header.png&quot; width=&quot;500&quot; /&gt;&lt;/center&gt;
+&lt;center&gt;IP-ID census results, shown as a 12th order Hilbert curve, a fractal space-filling curve. The use of Hilbert curves to compactly represent Internet-wide characteristics was popularized by the &lt;a href=&quot;https://xkcd.com/195/&quot;&gt;Xkcd comic&lt;/a&gt;.
+&lt;/center&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;p&gt;Specifically,  whereas the global counter (18% of occurrencies in our measurement) implementation was the 
+most common a decade ago, we find that other behaviors (constant 34% and local counter 39%) are now prevalent.  We also find that security recommendations expressed in 2011 are rarely followed (random, 2%). Finally, our census quantifies a non marginal number of hosts (7%) showing evidence of a range of behaviors, that can be traced to poor or non-standard implementations (e,.g., bogus endianness; non-standard increments) or network-level techniques (e.g., load balancing, or exogenous traffic intermingled to our probes confusing the classifier). To make our findings useful to a larger extent, we make all our dataset and &lt;a href=&quot;https://perso.telecom-paristech.fr/drossi/dataset/IP-ID/&quot;&gt;results available&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://media.giphy.com/media/J4n8zUlfvthV8HDm1E/giphy.gif&quot; alt=&quot;down&quot; height=&quot;36px&quot; width=&quot;36px&quot; /&gt; Want to know more? Read our paper!&lt;/p&gt;
+
+&lt;h4 id=&quot;publication&quot;&gt;Publication&lt;/h4&gt;
+
+&lt;p&gt;Salutari, Flavia and Cicalese, Danilo and Rossi, Dario, &lt;em&gt;A closer look at IP-ID behavior in the Wild&lt;/em&gt;, International Conference on Passive and Active Network Measurement (PAM) Mar. 2018.&lt;/p&gt;
+
+&lt;!-- 
+~~elucubrazioni~~
+
+## Let's getting started
+
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## Headings H1 to H6
+
+# H1 Heading
+
+## H2 Heading
+
+### H3 Heading
+
+#### H4 Heading
+
+##### H5 Heading
+
+###### H6 Heading
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## Footnote
+
+Let's say you have text that you want to refer with a footnote, you can do that too! This is an example for the footnote number one [^1]. You can even add more footnotes, with link! [^2]
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## Blockquote
+
+&gt; Start by doing what's necessary; then do what's possible; and suddenly you are doing the impossible. --Francis of Assisi
+
+**NOTE:** This theme does NOT support nested blockquotes.
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## List Items
+
+1. First order list item
+2. Second item
+
+* Unordered list can use asterisks
+- Or minuses
++ Or pluses
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## Code Blocks
+
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;s&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;JavaScript syntax highlighting&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;alert&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;sys&lt;/span&gt;  
+&lt;span class=&quot;n&quot;&gt;s&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;Python syntax highlighting&amp;quot;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;  
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;run_some_function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;():&lt;/span&gt;
+    &lt;span class=&quot;s2&quot;&gt;&amp;quot;Docs...&amp;quot;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-css&quot; data-lang=&quot;css&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;c&quot;&gt;/* css synthax highlighting */&lt;/span&gt; 
+&lt;span class=&quot;p&quot;&gt;#&lt;/span&gt;&lt;span class=&quot;nn&quot;&gt;container&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;left&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;margin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;-240&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;px&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+
+```
+No language indicated, so no syntax highlighting.
+But let's throw in a &lt;b&gt;tag&lt;/b&gt;.
+```
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## Table
+
+### Table 1: With Alignment
+
+| Tables        | Are           | Cool  |
+| ------------- |:-------------:| -----:|
+| col 3 is      | right-aligned | $1600 |
+| col 2 is      | centered      |   $12 |
+| zebra stripes | are neat      |    $1 |
+
+### Table 2: With Typography Elements
+
+Markdown | Less | Pretty
+--- | --- | ---
+*Still* | `renders` | **nicely**
+1 | 2 | 3
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## Horizontal Line
+
+The HTML `&lt;hr&gt;` element is for creating a &quot;thematic break&quot; between paragraph-level elements. In markdown, you can create a `&lt;hr&gt;` with any of the following:
+
+* `___`: three consecutive underscores
+* `---`: three consecutive dashes
+* `***`: three consecutive asterisks
+
+renders to:
+
+___
+
+---
+
+***
+
+&lt;div class=&quot;divider&quot;&gt;&lt;/div&gt;
+
+## Media
+
+### YouTube Embedded Iframe
+
+&lt;iframe width=&quot;420&quot; height=&quot;315&quot; src=&quot;https://www.youtube.com/embed/nN6QuNqmAwk&quot; frameborder=&quot;0&quot; allowfullscreen&gt;&lt;/iframe&gt;
+
+### Image
+
+![Nature](https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcSn8cwf82ee9tfml4Wx-tsM5AUavJ_DRHIiXXE4RejRp0RF2L7f6g)
+
+[^1]: Footnote number one yeah baby!
+
+[^2]: A footnote you can link to - [click here!](#) --&gt;
+</description>
+        <pubDate>Sun, 02 Sep 2018 15:46:52 +0200</pubDate>
+        <link>https://flaviasalutari.github.io//blog/2018/acloserlookatipid/</link>
+        <guid isPermaLink="true">https://flaviasalutari.github.io//blog/2018/acloserlookatipid/</guid>
+        
+        <category>protocol</category>
+        
+        <category>IP</category>
+        
+        <category>Internet Census</category>
+        
+        <category>Supervised Classification</category>
+        
+        
+        <category>publications</category>
+        
+      </item>
+    
+  </channel>
+</rss>
