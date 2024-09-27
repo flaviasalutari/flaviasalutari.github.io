@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Host classification via IP-ID</title>
+<meta name="description" content="At the dawn of the Internet a 16 bits field was introduced in the IPv4 packet to assist network-layer fragmentation and reassembly processes: the IP identifi...">
+
+
+<link rel="stylesheet" href="/css/main.css">
+<link rel="canonical" href="https://flaviasalutari.github.io//blog/2018/acloserlookatipid/">
+<link rel="alternate" type="application/rss+xml" title="Flavia Salutari's Website" href="https://flaviasalutari.github.io//feed.xml" />
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-52446115-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+</head>
+<body>
+  <header class="site-header">
+  <div class="container">
+    <input type="checkbox" id="toggleNavbar">
+    <h1 class="logo"><a href="/">flavia<span>salutari</span> <small></small></a></h1>
+    <label for="toggleNavbar" role="button" class="toggle-navbar-button">
+      <i class="icon icon-menu"></i>
+      <i class="icon icon-cross"></i>
+    </label>
+    <nav class="navbar">
+      <ul>
+        <li><a href="/" title="Home">Home</a></li>
+        
+          <li><a href="/about" title="About">About</a></li>
+        
+          <li><a href="/blog" title="Blog">Blog</a></li>
+        
+          <li><a href="/teaching" title="Teaching">Teaching</a></li>
+        
+          <li><a href="/publications" title="Publications">Publications</a></li>
+        
+        <li><a href="http://flaviasalutari.github.io/resume">Resume</a></li>
+<!--         <li><a href="https://github.com/flaviasalutari/flaviasalutari.github.io/archive/master.zip" title="Download">Resume</a></li>
+ -->        
+ <!-- <li><a href="/feed.xml" target="_blank"><i class="icon icon-rss"></i></a></li> -->
+      </ul>
+    </nav>
+  </div>
+</header>
+
+
+<main class="main-container">
+  <div class="container">
+    <article role="article" class="post">
+
+  <div class="card">
+    <header class="post-header">
+      <h1 class="post-title">Host classification via IP-ID</h1>
+      <em class="post-meta">
+        <time>Sep 2, 2018</time>
+      </em>
+    </header>
+
+    <div class="post-content">
+      
+        <figure class="post-thumbnail ">
+          <img src="/images/ipid/worldcensus.png" alt="Host classification via IP-ID">
+        </figure>
+      
+      <p>At the dawn of the Internet a 16 bits field was introduced in the IPv4 packet to assist network-layer fragmentation and reassembly processes: the IP identifier (IP-ID).</p>
+
+<p>Over the years, the IP-ID was mostly implemented as a simple packet counter: however, this behavior
+has been discouraged for security reasons and other policies, as the use of random values, have been suggested. Nowadays, things seem to be changed: with an Internet-wide census we reveal which are the most prevalent IP-ID implementations.</p>
+
+<h3 id="1-a-brief-history-of-ip-id-implementations-and-applications">1. A brief history of IP-ID, implementations and applications</h3>
+
+<p>In the very first document, the <a href="https://tools.ietf.org/html/rfc791">RFC 791</a>, valid IP-ID choices were not fully specified: it was only stated that each IP packet must have a unique IP-ID for the trio of source, destination and protocol within the maximum datagram lifetime. This made possible its exploitation and <em>abuse</em> for a range of tasks, from counting hosts behind NAT, to detect router aliases and, lately, to assist detection of censorship in the Internet at large.</p>
+
+<p><br /><br /></p>
+<center><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Ipv4_header.svg/1000px-Ipv4_header.svg.png" width="500" /></center>
+<center>IP Packet Header. [Wikipedia]</center>
+<p><br /><br /></p>
+
+<p>Yet, over the years, with technology evolution, the IP-ID has been the object of numerous changes (for instance, to enforce more secure policies), and about a decade ago the different ways in which it could be set by the operating system were listed and detailed in <a href="https://tools.ietf.org/html/rfc4413">RFC 4413</a> and <a href="https://tools.ietf.org/html/rfc5225">RFC 5225</a>. As a result, a wider range of behaviors can be expected nowadays. Indeed, the IP-ID field can be set in different manners: as a <em>global</em> counter (incremented by one at every new packet), or as a <em>local</em> counter (in which separate counters are kept for different destinations), or as the output of a <em>pseudo-random</em> number generator or finally as a (typically null-valued) <em>constant</em>.</p>
+
+<p><a href="https://cs.gmu.edu/~eoster/2019-795/2019-795-papers/06682711.pdf">The sole quantitative assessment</a> of IP-ID behavior over multiple classes dates back to 2013 and is limited to 271 Top Level Domains TLDs. This study finds the IP-ID implementations to be so distributed: 57% global, 14% local, 9% constant, 1% random/other. The remaining works concentrate instead on assessing the popularity of just the global implementation being it the only focus of their studies, given its invaluable help to infer a wealth of information concerning the network.</p>
+
+<h3 id="2-measure-and-classify-the-ip-ids">2. Measure and classify the IP-IDs</h3>
+
+<p>These policies can be inferred by leveraging two vantage points sending packets that arrived interleaved at the target host: the resulting sequences are illustrated in the following pictures (where the two vantage points are represented as a white box and a purple circle).</p>
+
+<p>In <a href="https://flaviasalutari.github.io/publications/pam2018.pdf">our study</a>, we first propose a framework to robustly classify the different IP-ID behaviours with only a handful of IP packets. We rely on active probing from a single host using IP spoofing to precisely control packet interleaving at the generation. Despite being only minimally intrusive, our technique is significantly accurate (99% true positive classification), robust against packet losses (up to 20%) and lightweight (few packets suffices to discriminate all IP-ID behaviors). 
+<br /><br /></p>
+<center><img src="/images/ipid/ipid_classes.png" width="500" /></center>
+<center>Synoptic of IP-ID host behaviors.</center>
+<p><br /><br />
+This framework is based on the definition of highly discriminative features with known expected values, that we train over a dataset with manually constructed ground truth, that we make available to the community. Notice that by employing a supervised technique, we are also able to cope with odd behaviors such as those due to load balancing middleboxes, or host implementations using the wrong endianness. The <a href="https://perso.telecom-paristech.fr/drossi/data/ipid/IPID-G.tgz">ground truth dataset</a> we release can of course be useful to validate any other technique you may wish to define, so don’t hesitate to grab a copy!</p>
+
+<h3 id="3-an-internet-wide-census">3. An Internet-wide Census</h3>
+
+<p>Given that our classifier is lightweight and robust to losses, we finally performed a census of the IPv4 address space. We do so by actively probing one alive target per each routable /24 block.
+This outcome provides a picture of Internet-wide adoption of the different IP-ID implementations.</p>
+
+<center><img src="/images/ipid/IP-header.png" width="500" /></center>
+<center>IP-ID census results, shown as a 12th order Hilbert curve, a fractal space-filling curve. The use of Hilbert curves to compactly represent Internet-wide characteristics was popularized by the <a href="https://xkcd.com/195/">Xkcd comic</a>.
+</center>
+
+<p><br /><br /></p>
+
+<p>Specifically,  whereas the global counter (18% of occurrencies in our measurement) implementation was the 
+most common a decade ago, we find that other behaviors (constant 34% and local counter 39%) are now prevalent.  We also find that security recommendations expressed in 2011 are rarely followed (random, 2%). Finally, our census quantifies a non marginal number of hosts (7%) showing evidence of a range of behaviors, that can be traced to poor or non-standard implementations (e,.g., bogus endianness; non-standard increments) or network-level techniques (e.g., load balancing, or exogenous traffic intermingled to our probes confusing the classifier). To make our findings useful to a larger extent, we make all our dataset and <a href="https://perso.telecom-paristech.fr/drossi/dataset/IP-ID/">results available</a>.</p>
+
+<p><img src="https://media.giphy.com/media/J4n8zUlfvthV8HDm1E/giphy.gif" alt="down" height="36px" width="36px" /> Want to know more? Read our paper!</p>
+
+<h4 id="publication">Publication</h4>
+
+<p>Salutari, Flavia and Cicalese, Danilo and Rossi, Dario, <em>A closer look at IP-ID behavior in the Wild</em>, International Conference on Passive and Active Network Measurement (PAM) Mar. 2018.</p>
+
+<!-- 
+~~elucubrazioni~~
+
+## Let's getting started
+
+
+<div class="divider"></div>
+
+## Headings H1 to H6
+
+# H1 Heading
+
+## H2 Heading
+
+### H3 Heading
+
+#### H4 Heading
+
+##### H5 Heading
+
+###### H6 Heading
+
+<div class="divider"></div>
+
+## Footnote
+
+Let's say you have text that you want to refer with a footnote, you can do that too! This is an example for the footnote number one [^1]. You can even add more footnotes, with link! [^2]
+
+<div class="divider"></div>
+
+## Blockquote
+
+> Start by doing what's necessary; then do what's possible; and suddenly you are doing the impossible. --Francis of Assisi
+
+**NOTE:** This theme does NOT support nested blockquotes.
+
+<div class="divider"></div>
+
+## List Items
+
+1. First order list item
+2. Second item
+
+* Unordered list can use asterisks
+- Or minuses
++ Or pluses
+
+<div class="divider"></div>
+
+## Code Blocks
+
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span></span><span class="kd">var</span><span class="w"> </span><span class="nx">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;JavaScript syntax highlighting&quot;</span><span class="p">;</span>
+<span class="nx">alert</span><span class="p">(</span><span class="nx">s</span><span class="p">);</span></code></pre></figure>
+
+
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span></span><span class="kn">import</span> <span class="nn">sys</span>  
+<span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;Python syntax highlighting&quot;</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>  
+<span class="k">def</span> <span class="nf">run_some_function</span><span class="p">():</span>
+    <span class="s2">&quot;Docs...&quot;</span>
+    <span class="k">return</span></code></pre></figure>
+
+
+
+<figure class="highlight"><pre><code class="language-css" data-lang="css"><span></span><span class="c">/* css synthax highlighting */</span><span class="w"> </span>
+<span class="p">#</span><span class="nn">container</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">float</span><span class="p">:</span><span class="w"> </span><span class="kc">left</span><span class="p">;</span>
+<span class="w">    </span><span class="k">margin</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">-240</span><span class="kt">px</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="k">width</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="kt">%</span><span class="p">;</span>
+<span class="p">}</span></code></pre></figure>
+
+
+```
+No language indicated, so no syntax highlighting.
+But let's throw in a <b>tag</b>.
+```
+
+<div class="divider"></div>
+
+## Table
+
+### Table 1: With Alignment
+
+| Tables        | Are           | Cool  |
+| ------------- |:-------------:| -----:|
+| col 3 is      | right-aligned | $1600 |
+| col 2 is      | centered      |   $12 |
+| zebra stripes | are neat      |    $1 |
+
+### Table 2: With Typography Elements
+
+Markdown | Less | Pretty
+--- | --- | ---
+*Still* | `renders` | **nicely**
+1 | 2 | 3
+
+<div class="divider"></div>
+
+## Horizontal Line
+
+The HTML `<hr>` element is for creating a "thematic break" between paragraph-level elements. In markdown, you can create a `<hr>` with any of the following:
+
+* `___`: three consecutive underscores
+* `---`: three consecutive dashes
+* `***`: three consecutive asterisks
+
+renders to:
+
+___
+
+---
+
+***
+
+<div class="divider"></div>
+
+## Media
+
+### YouTube Embedded Iframe
+
+<iframe width="420" height="315" src="https://www.youtube.com/embed/nN6QuNqmAwk" frameborder="0" allowfullscreen></iframe>
+
+### Image
+
+![Nature](https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcSn8cwf82ee9tfml4Wx-tsM5AUavJ_DRHIiXXE4RejRp0RF2L7f6g)
+
+[^1]: Footnote number one yeah baby!
+
+[^2]: A footnote you can link to - [click here!](#) -->
+
+    </div>
+
+    
+<hr>
+
+<aside id="comments" class="disqus">
+  <h3><i class="icon icon-comments-o"></i> Comments</h3>
+  <div id="disqus_thread"></div>
+  <script>
+    var disqus_config = function() {
+      this.page.url = 'https://flaviasalutari.github.io//blog/2018/acloserlookatipid/';
+      this.page.identifier = '/blog/2018/acloserlookatipid';
+    };
+    (function() {
+      var d = document,
+      s = d.createElement('script');
+      s.src = '//flaviasalutari.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', +new Date());
+      (d.head || d.body).appendChild(s);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+</aside>
+
+
+  </div>
+
+</article>
+
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <ul class="social">
+
+
+  <li><a href="https://github.com/flaviasalutari" target="_blank"><i class="icon icon-github"></i></a></li>
+  <!-- <li><a href="https://twitter.com/fsalutari" target="_blank"><i class="icon icon-twitter"></i></a></li> -->
+<!--   <li><a href="" target="_blank"><i class="icon icon-facebook"></i></a></li>-->  
+<li><a href="https://www.linkedin.com/in/flaviasalutari/" target="_blank"><i class="icon icon-linkedin"></i></a></li>
+<li><a href="/assets/flaviasalutariCV_eng_2023.pdf" target="_blank"><i class="icon icon-cloud-download"></i></a></li>
+<li><a href="https://scholar.google.fr/citations?user=vfZgNcwAAAAJ&hl" target="_blank"><i class="icon icon-pencil"></i></a></li>
+<br><li><a href="/indit"><img src="https://flaviasalutari.github.io//assets/flagit.png" width="30" height="20"></a></li>
+<li><a href="/indfr"><img src="https://flaviasalutari.github.io//assets/flagfr.png" width="30" height="20"></a></li>
+
+</ul>
+    <p class="txt-medium-gray">
+      <small>&copy;2024 All rights reserved. Made with <a href="http://jekyllrb.com/" target="_blank">Jekyll</a> and ♥</small>
+    </p>
+  </div>
+  
+
+</footer>
+
+
+<script>
+$(document).ready(function(){
+    var str =$(this).attr('id');
+    
+    $(".btnId").click(function(){
+        var str = $(this).attr('id');
+        var ret = str.split("_");
+        var id = ret[1];
+        $('#' + id).toggle();
+    });
+});
+</script>
+
+
+<!--   <a href="https://github.com/flaviasalutari/flaviasalutari.github.io" target="_blank" class="github-corner"><svg width="80" height="80" viewBox="0 0 250 250" style="fill:#337ab7; color:#fff; position: absolute; top: 0; border: 0; right: 0;"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+ -->
+ 	
+ </body>
+</html>
